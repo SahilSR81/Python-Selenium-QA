@@ -26,8 +26,6 @@ But while building test automation frameworks, I identified friction points:
 ❌ Longer feedback loops for test experimentation
 ❌ More code for the same automation intent
 
-## Strategic Switch
-
 I chose Python as a force multiplier, not a shortcut:
 ✅ Faster test development
 ✅ Cleaner test readability (important for QA & Dev teams)
