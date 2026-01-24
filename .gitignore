@@ -1,0 +1,20 @@
+# Virtual environment
+venv/
+.env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Selenium / test artifacts
+reports/
+screenshots/
+
+# OS / editor junk
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log
