@@ -14,3 +14,20 @@ def driver(request):
     driver = get_driver(request.param)
     yield driver
     driver.quit()
+
+
+from utils.screenshot_utils import capture_screenshot
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    rep = outcome.get_result()
+    setattr(item, "rep_" + rep.when, rep)
+
+
+@pytest.fixture(autouse=True)
+def screenshot_on_failure(request, driver):
+    yield
+    if request.node.rep_call.failed:
+        capture_screenshot(driver, request.node.name)
