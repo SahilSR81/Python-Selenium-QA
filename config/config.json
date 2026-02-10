@@ -1,0 +1,14 @@
+{
+    "qa": {
+        "base_url": "https://the-internet.herokuapp.com/login",
+        "browser": "chrome",
+        "username": "tomsmith",
+        "password": "SuperSecretPassword!"
+    },
+    "staging": {
+        "base_url": "https://the-internet.herokuapp.com/login",
+        "browser": "firefox",
+        "username": "tomsmith",
+        "password": "SuperSecretPassword!"
+    }
+}
