@@ -1,0 +1,7 @@
+[
+    {
+        "username": "tomsmith",
+        "password": "SuperSecretPassword!",
+        "expected": "secure area"
+    }
+]
