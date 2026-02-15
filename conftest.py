@@ -54,3 +54,10 @@ def screenshot_on_failure(request, driver):
     yield
     if request.node.rep_call.failed:
         capture_screenshot(driver, request.node.name)
+
+
+# ---------------- MARKER REGISTRATION ----------------
+def pytest_configure(config):
+    config.addinivalue_line("markers", "smoke: Smoke tests")
+    config.addinivalue_line("markers", "regression: Regression tests")
+    config.addinivalue_line("markers", "sanity: Sanity tests")
