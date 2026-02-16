@@ -61,3 +61,17 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "smoke: Smoke tests")
     config.addinivalue_line("markers", "regression: Regression tests")
     config.addinivalue_line("markers", "sanity: Sanity tests")
+
+
+# ============================================================
+# ---------------- PARALLEL EXECUTION INFO ----------------
+# Prints worker id when running with pytest-xdist
+# ============================================================
+@pytest.fixture(autouse=True)
+def print_worker_info(request):
+    worker_id = (
+        request.config.workerinput["workerid"]
+        if hasattr(request.config, "workerinput")
+        else "master"
+    )
+    print(f"\n[Running on worker: {worker_id}]")
