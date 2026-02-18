@@ -75,3 +75,5 @@ def print_worker_info(request):
         else "master"
     )
     print(f"\n[Running on worker: {worker_id}]")
+
+
