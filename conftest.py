@@ -56,11 +56,24 @@ def screenshot_on_failure(request, driver):
         capture_screenshot(driver, request.node.name)
 
 
-# ---------------- MARKER REGISTRATION ----------------
+# ---------------- MARKER REGISTRATION + REPORT METADATA ----------------
 def pytest_configure(config):
+    # Register markers
     config.addinivalue_line("markers", "smoke: Smoke tests")
     config.addinivalue_line("markers", "regression: Regression tests")
     config.addinivalue_line("markers", "sanity: Sanity tests")
+
+    # Add metadata for pytest-html (if plugin active)
+    if hasattr(config, "_metadata"):
+        config._metadata["Project"] = "Python Selenium QA Framework"
+        config._metadata["Execution Mode"] = "Parallel Supported"
+        config._metadata["Browser Param"] = "Multi-browser"
+        config._metadata["Tester"] = "Sahil Singh"
+
+
+# ---------------- HTML REPORT TITLE ----------------
+def pytest_html_report_title(report):
+    report.title = "Automation Execution Report"
 
 
 # ============================================================
@@ -75,5 +88,3 @@ def print_worker_info(request):
         else "master"
     )
     print(f"\n[Running on worker: {worker_id}]")
-
-
