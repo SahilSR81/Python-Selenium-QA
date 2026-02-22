@@ -4,23 +4,29 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.edge.options import Options as EdgeOptions
 
 
-def get_driver(browser: str):
+def get_driver(browser: str, headless: bool = False):
     browser = browser.lower()
 
     if browser == "chrome":
         options = ChromeOptions()
         options.add_argument("--start-maximized")
+        if headless:
+            options.add_argument("--headless=new")
         return webdriver.Chrome(options=options)
 
     elif browser == "firefox":
         options = FirefoxOptions()
         options.add_argument("--width=1920")
         options.add_argument("--height=1080")
+        if headless:
+            options.add_argument("--headless")
         return webdriver.Firefox(options=options)
 
     elif browser == "edge":
         options = EdgeOptions()
         options.add_argument("--start-maximized")
+        if headless:
+            options.add_argument("--headless=new")
         return webdriver.Edge(options=options)
 
     else:

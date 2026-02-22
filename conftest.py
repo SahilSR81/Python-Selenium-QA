@@ -23,6 +23,14 @@ def pytest_addoption(parser):
     parser.addoption(
         "--app", action="store", default="saucedemo", help="Application under test"
     )
+    
+    parser.addoption(
+        "--env", action="store", default="qa", help="Environment profile (dev/qa/prod)"
+    )
+
+    parser.addoption(
+        "--headless", action="store_true", help="Run browser in headless mode"
+    )
 
 
 # ---------------- DRIVER FIXTURE ----------------
@@ -33,7 +41,8 @@ def driver(request):
     if app_name not in APP_URLS:
         raise ValueError(f"Invalid app name: {app_name}")
 
-    driver = get_driver(request.param)
+    headless = request.config.getoption("--headless")
+    driver = get_driver(request.param, headless=headless)
     driver.get(APP_URLS[app_name])
 
     yield driver
@@ -88,3 +97,14 @@ def print_worker_info(request):
         else "master"
     )
     print(f"\n[Running on worker: {worker_id}]")
+
+# ============================================================
+# ENVIRONMENT PROFILE FIXTURE
+# ============================================================
+
+@pytest.fixture(scope="session")
+def env_config(request):
+    from utils.env_loader import load_environment
+
+    env_name = request.config.getoption("--env")
+    return load_environment(env_name)
