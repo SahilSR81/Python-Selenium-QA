@@ -108,3 +108,20 @@ def env_config(request):
 
     env_name = request.config.getoption("--env")
     return load_environment(env_name)
+
+
+# ============================================================
+# DATA PROVIDER FIXTURES 
+# ============================================================
+
+from utils.data_provider import load_login_data
+
+
+@pytest.fixture(scope="session")
+def valid_login_data():
+    return load_login_data("valid")
+
+
+@pytest.fixture(scope="session")
+def invalid_login_data():
+    return load_login_data("invalid")
