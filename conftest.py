@@ -23,13 +23,25 @@ def pytest_addoption(parser):
     parser.addoption(
         "--app", action="store", default="saucedemo", help="Application under test"
     )
-    
+
     parser.addoption(
         "--env", action="store", default="qa", help="Environment profile (dev/qa/prod)"
     )
 
     parser.addoption(
         "--headless", action="store_true", help="Run browser in headless mode"
+    )
+
+    # ---- DAY 38 ADD ----
+    parser.addoption(
+        "--fail-fast", action="store_true", help="Stop execution on first failure"
+    )
+
+    parser.addoption(
+        "--max-failures",
+        action="store",
+        default=None,
+        help="Stop execution after N failures",
     )
 
 
@@ -111,7 +123,7 @@ def env_config(request):
 
 
 # ============================================================
-# DATA PROVIDER FIXTURES 
+# DATA PROVIDER FIXTURES
 # ============================================================
 
 from utils.data_provider import load_login_data
@@ -125,3 +137,23 @@ def valid_login_data():
 @pytest.fixture(scope="session")
 def invalid_login_data():
     return load_login_data("invalid")
+
+
+# ============================================================
+# EXECUTION CONTROL
+# ============================================================
+
+def pytest_sessionfinish(session, exitstatus):
+    config = session.config
+
+    if config.getoption("--fail-fast") and session.testsfailed > 0:
+        session.shouldstop = "Fail-fast activated."
+
+    max_failures = config.getoption("--max-failures")
+    if max_failures:
+        try:
+            max_failures = int(max_failures)
+            if session.testsfailed >= max_failures:
+                session.shouldstop = f"Max failure limit {max_failures} reached."
+        except ValueError:
+            pass
