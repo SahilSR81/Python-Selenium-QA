@@ -1,6 +1,7 @@
 import sys
 import os
 import pytest
+import time
 
 # ---------------- PATH SETUP ----------------
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -9,6 +10,11 @@ sys.path.insert(0, ROOT_DIR)
 # ---------------- IMPORTS ----------------
 from utils.driver_factory import get_driver
 from utils.screenshot_utils import capture_screenshot
+from utils.execution_metrics import ExecutionMetrics
+from utils.data_provider import load_login_data
+
+# ---------------- GLOBAL METRICS OBJECT ----------------
+metrics = ExecutionMetrics()
 
 # ---------------- APP URL CONFIG ----------------
 APP_URLS = {
@@ -18,7 +24,7 @@ APP_URLS = {
 }
 
 
-# ---------------- CLI OPTION ----------------
+# ---------------- CLI OPTIONS ----------------
 def pytest_addoption(parser):
     parser.addoption(
         "--app", action="store", default="saucedemo", help="Application under test"
@@ -32,7 +38,6 @@ def pytest_addoption(parser):
         "--headless", action="store_true", help="Run browser in headless mode"
     )
 
-    # ---- DAY 38 ADD ----
     parser.addoption(
         "--fail-fast", action="store_true", help="Stop execution on first failure"
     )
@@ -55,13 +60,23 @@ def driver(request):
 
     headless = request.config.getoption("--headless")
     driver = get_driver(request.param, headless=headless)
+
     driver.get(APP_URLS[app_name])
 
     yield driver
     driver.quit()
 
 
-# ---------------- PYTEST HOOK ----------------
+# ---------------- TEST DURATION TRACKER ----------------
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_call(item):
+    start = time.time()
+    yield
+    duration = time.time() - start
+    metrics.record_test(item.name, duration)
+
+
+# ---------------- PYTEST REPORT HOOK ----------------
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
@@ -79,12 +94,10 @@ def screenshot_on_failure(request, driver):
 
 # ---------------- MARKER REGISTRATION + REPORT METADATA ----------------
 def pytest_configure(config):
-    # Register markers
     config.addinivalue_line("markers", "smoke: Smoke tests")
     config.addinivalue_line("markers", "regression: Regression tests")
     config.addinivalue_line("markers", "sanity: Sanity tests")
 
-    # Add metadata for pytest-html (if plugin active)
     if hasattr(config, "_metadata"):
         config._metadata["Project"] = "Python Selenium QA Framework"
         config._metadata["Execution Mode"] = "Parallel Supported"
@@ -97,10 +110,7 @@ def pytest_html_report_title(report):
     report.title = "Automation Execution Report"
 
 
-# ============================================================
 # ---------------- PARALLEL EXECUTION INFO ----------------
-# Prints worker id when running with pytest-xdist
-# ============================================================
 @pytest.fixture(autouse=True)
 def print_worker_info(request):
     worker_id = (
@@ -110,10 +120,8 @@ def print_worker_info(request):
     )
     print(f"\n[Running on worker: {worker_id}]")
 
-# ============================================================
-# ENVIRONMENT PROFILE FIXTURE
-# ============================================================
 
+# ---------------- ENVIRONMENT PROFILE FIXTURE ----------------
 @pytest.fixture(scope="session")
 def env_config(request):
     from utils.env_loader import load_environment
@@ -122,13 +130,7 @@ def env_config(request):
     return load_environment(env_name)
 
 
-# ============================================================
-# DATA PROVIDER FIXTURES
-# ============================================================
-
-from utils.data_provider import load_login_data
-
-
+# ---------------- DATA PROVIDER FIXTURES ----------------
 @pytest.fixture(scope="session")
 def valid_login_data():
     return load_login_data("valid")
@@ -139,16 +141,15 @@ def invalid_login_data():
     return load_login_data("invalid")
 
 
-# ============================================================
-# EXECUTION CONTROL
-# ============================================================
-
+# ---------------- SESSION FINISH (EXECUTION CONTROL + METRICS) ----------------
 def pytest_sessionfinish(session, exitstatus):
     config = session.config
 
+    # ----- Fail Fast -----
     if config.getoption("--fail-fast") and session.testsfailed > 0:
         session.shouldstop = "Fail-fast activated."
 
+    # ----- Max Failures -----
     max_failures = config.getoption("--max-failures")
     if max_failures:
         try:
@@ -157,3 +158,10 @@ def pytest_sessionfinish(session, exitstatus):
                 session.shouldstop = f"Max failure limit {max_failures} reached."
         except ValueError:
             pass
+
+    # ----- Execution Metrics -----
+    summary = metrics.generate_summary()
+    metrics.export_summary(summary)
+
+    print("\n==== EXECUTION SUMMARY ====")
+    print(summary)
