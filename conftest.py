@@ -159,9 +159,13 @@ def pytest_sessionfinish(session, exitstatus):
         except ValueError:
             pass
 
-    # ----- Execution Metrics -----
-    summary = metrics.generate_summary()
-    metrics.export_summary(summary)
+        # ----- Execution Metrics -----
+    env = config.getoption("--env")
+    browser_mode = "headless" if config.getoption("--headless") else "headed"
+
+    summary = metrics.generate_summary(env, browser_mode)
+    path = metrics.export_summary(summary)
 
     print("\n==== EXECUTION SUMMARY ====")
     print(summary)
+    print(f"\nReport saved at: {path}")
