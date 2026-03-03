@@ -12,9 +12,11 @@ from utils.driver_factory import get_driver
 from utils.screenshot_utils import capture_screenshot
 from utils.execution_metrics import ExecutionMetrics
 from utils.data_provider import load_login_data
+from utils.flaky_tracker import FlakyTracker
 
 # ---------------- GLOBAL METRICS OBJECT ----------------
 metrics = ExecutionMetrics()
+flaky_tracker = FlakyTracker()
 
 # ---------------- APP URL CONFIG ----------------
 APP_URLS = {
@@ -47,6 +49,12 @@ def pytest_addoption(parser):
         action="store",
         default=None,
         help="Stop execution after N failures",
+    )
+
+    parser.addoption(
+        "--ci-mode",
+        action="store_true",
+        help="Enable strict CI validation mode",
     )
 
 
@@ -82,6 +90,12 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     rep = outcome.get_result()
     setattr(item, "rep_" + rep.when, rep)
+
+
+@pytest.hookimpl
+def pytest_runtest_logreport(report):
+    if report.when == "call" and report.failed:
+        flaky_tracker.record_retry(report.nodeid)
 
 
 # ---------------- SCREENSHOT ON FAILURE ----------------
@@ -169,3 +183,15 @@ def pytest_sessionfinish(session, exitstatus):
     print("\n==== EXECUTION SUMMARY ====")
     print(summary)
     print(f"\nReport saved at: {path}")
+
+    # ----- CI Mode Strict Validation -----
+    if config.getoption("--ci-mode"):
+        if session.testscollected == 0:
+            raise RuntimeError("CI Mode: No tests were collected.")
+
+        if session.testsfailed > 0:
+            raise RuntimeError("CI Mode: Test failures detected.")
+
+    # ----- Flaky Test Summary -----
+    flaky_tests = flaky_tracker.get_flaky_tests()
+    summary["flaky_tests"] = flaky_tests
