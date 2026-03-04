@@ -13,6 +13,7 @@ from utils.screenshot_utils import capture_screenshot
 from utils.execution_metrics import ExecutionMetrics
 from utils.data_provider import load_login_data
 from utils.flaky_tracker import FlakyTracker
+from utils.data_provider import load_dataset, validate_dataset_structure
 
 # ---------------- GLOBAL METRICS OBJECT ----------------
 metrics = ExecutionMetrics()
@@ -153,6 +154,13 @@ def valid_login_data():
 @pytest.fixture(scope="session")
 def invalid_login_data():
     return load_login_data("invalid")
+
+
+@pytest.fixture(scope="session")
+def login_dataset():
+    dataset = load_dataset("test_login_dataset")
+    validate_dataset_structure(dataset)
+    return dataset
 
 
 # ---------------- SESSION FINISH (EXECUTION CONTROL + METRICS) ----------------
