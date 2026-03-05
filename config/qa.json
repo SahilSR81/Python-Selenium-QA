@@ -1,0 +1,5 @@
+{
+    "env_name": "qa",
+    "base_url": "https://www.saucedemo.com/",
+    "browser_default": "chrome"
+}

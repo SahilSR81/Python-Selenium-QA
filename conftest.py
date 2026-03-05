@@ -14,6 +14,7 @@ from utils.execution_metrics import ExecutionMetrics
 from utils.data_provider import load_login_data
 from utils.flaky_tracker import FlakyTracker
 from utils.data_provider import load_dataset, validate_dataset_structure
+from utils.config_manager import ConfigManager
 
 # ---------------- GLOBAL METRICS OBJECT ----------------
 metrics = ExecutionMetrics()
@@ -203,3 +204,12 @@ def pytest_sessionfinish(session, exitstatus):
     # ----- Flaky Test Summary -----
     flaky_tests = flaky_tracker.get_flaky_tests()
     summary["flaky_tests"] = flaky_tests
+
+# ---------------- CONFIG MANAGER FIXTURE ----------------
+
+@pytest.fixture(scope="session")
+def config_manager():
+    manager = ConfigManager()
+    config = manager.load_config("qa")
+    manager.validate_config(config)
+    return config
