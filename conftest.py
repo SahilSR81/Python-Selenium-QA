@@ -15,10 +15,12 @@ from utils.data_provider import load_login_data
 from utils.flaky_tracker import FlakyTracker
 from utils.data_provider import load_dataset, validate_dataset_structure
 from utils.config_manager import ConfigManager
+from utils.run_metadata_manager import RunMetadataManager
 
 # ---------------- GLOBAL METRICS OBJECT ----------------
 metrics = ExecutionMetrics()
 flaky_tracker = FlakyTracker()
+run_metadata_manager = RunMetadataManager()
 
 # ---------------- APP URL CONFIG ----------------
 APP_URLS = {
@@ -182,7 +184,7 @@ def pytest_sessionfinish(session, exitstatus):
         except ValueError:
             pass
 
-        # ----- Execution Metrics -----
+    # ----- Execution Metrics -----
     env = config.getoption("--env")
     browser_mode = "headless" if config.getoption("--headless") else "headed"
 
@@ -205,11 +207,10 @@ def pytest_sessionfinish(session, exitstatus):
     flaky_tests = flaky_tracker.get_flaky_tests()
     summary["flaky_tests"] = flaky_tests
 
-# ---------------- CONFIG MANAGER FIXTURE ----------------
+    # ----- RUN METADATA GENERATION -----
+    metadata = run_metadata_manager.generate_metadata(env, browser_mode)
+    metadata_path = run_metadata_manager.export_metadata(metadata)
 
-@pytest.fixture(scope="session")
-def config_manager():
-    manager = ConfigManager()
-    config = manager.load_config("qa")
-    manager.validate_config(config)
-    return config
+    print("\n==== RUN METADATA ====")
+    print(metadata)
+    print(f"Run metadata saved at: {metadata_path}")
