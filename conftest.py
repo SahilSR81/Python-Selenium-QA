@@ -16,11 +16,13 @@ from utils.flaky_tracker import FlakyTracker
 from utils.data_provider import load_dataset, validate_dataset_structure
 from utils.config_manager import ConfigManager
 from utils.run_metadata_manager import RunMetadataManager
+from utils.tag_manager import TagManager
 
 # ---------------- GLOBAL METRICS OBJECT ----------------
 metrics = ExecutionMetrics()
 flaky_tracker = FlakyTracker()
 run_metadata_manager = RunMetadataManager()
+tag_manager = TagManager()
 
 # ---------------- APP URL CONFIG ----------------
 APP_URLS = {
@@ -59,6 +61,13 @@ def pytest_addoption(parser):
         "--ci-mode",
         action="store_true",
         help="Enable strict CI validation mode",
+    )
+
+    parser.addoption(
+        "--tag",
+        action="store",
+        default=None,
+        help="Run tests matching a specific tag",
     )
 
 
@@ -202,7 +211,6 @@ def pytest_sessionfinish(session, exitstatus):
 
         if session.testsfailed > 0:
             raise RuntimeError("CI Mode: Test failures detected.")
-
     # ----- Flaky Test Summary -----
     flaky_tests = flaky_tracker.get_flaky_tests()
     summary["flaky_tests"] = flaky_tests
@@ -214,3 +222,46 @@ def pytest_sessionfinish(session, exitstatus):
     print("\n==== RUN METADATA ====")
     print(metadata)
     print(f"Run metadata saved at: {metadata_path}")
+
+    # ----- TAG REGISTRY EXPORT -----
+    tag_registry_path = tag_manager.export_tags()
+
+    print("\n==== TAG REGISTRY ====")
+    print(f"Tag registry saved at: {tag_registry_path}")
+
+# ----- TAG REGISTRY EXPORT -----
+tag_registry_path = tag_manager.export_tags()
+
+print("\n==== TAG REGISTRY ====")
+print(f"Tag registry saved at: {tag_registry_path}")
+
+
+# ---------------- TAG COLLECTION HOOK ----------------
+def pytest_collection_modifyitems(config, items):
+
+    selected_tag = config.getoption("--tag")
+
+    for item in items:
+
+        tags = []
+
+        if "smoke" in item.keywords:
+            tags.append("smoke")
+
+        if "regression" in item.keywords:
+            tags.append("regression")
+
+        if "sanity" in item.keywords:
+            tags.append("sanity")
+
+        tag_manager.register_test(item.name, tags)
+
+    if selected_tag:
+
+        filtered = []
+
+        for item in items:
+            if selected_tag in item.keywords:
+                filtered.append(item)
+
+        items[:] = filtered
