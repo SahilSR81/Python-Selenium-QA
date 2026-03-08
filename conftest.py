@@ -17,12 +17,14 @@ from utils.data_provider import load_dataset, validate_dataset_structure
 from utils.config_manager import ConfigManager
 from utils.run_metadata_manager import RunMetadataManager
 from utils.tag_manager import TagManager
+from utils.test_impact_analyzer import TestImpactAnalyzer
 
 # ---------------- GLOBAL METRICS OBJECT ----------------
 metrics = ExecutionMetrics()
 flaky_tracker = FlakyTracker()
 run_metadata_manager = RunMetadataManager()
 tag_manager = TagManager()
+impact_analyzer = TestImpactAnalyzer()
 
 # ---------------- APP URL CONFIG ----------------
 APP_URLS = {
@@ -68,6 +70,12 @@ def pytest_addoption(parser):
         action="store",
         default=None,
         help="Run tests matching a specific tag",
+    )
+
+    parser.addoption(
+        "--impact",
+        action="store_true",
+        help="Run only tests impacted by recent code changes",
     )
 
 
@@ -265,3 +273,26 @@ def pytest_collection_modifyitems(config, items):
                 filtered.append(item)
 
         items[:] = filtered
+
+    if config.getoption("--impact"):
+
+        changed = impact_analyzer.detect_changed_files()
+        affected = impact_analyzer.map_tests()
+
+        if not affected:
+            return
+
+        filtered = []
+
+        for item in items:
+            for test_path in affected:
+                if test_path in str(item.fspath):
+                    filtered.append(item)
+
+        items[:] = filtered
+
+    # ----- IMPACT ANALYSIS REPORT -----
+    impact_path = impact_analyzer.export_report()
+
+    print("\n==== TEST IMPACT ANALYSIS ====")
+    print(f"Impact report saved at: {impact_path}")
