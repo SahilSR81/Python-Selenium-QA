@@ -18,6 +18,7 @@ from utils.config_manager import ConfigManager
 from utils.run_metadata_manager import RunMetadataManager
 from utils.tag_manager import TagManager
 from utils.test_impact_analyzer import TestImpactAnalyzer
+from utils.dependency_graph_builder import DependencyGraphBuilder
 
 # ---------------- GLOBAL METRICS OBJECT ----------------
 metrics = ExecutionMetrics()
@@ -25,6 +26,7 @@ flaky_tracker = FlakyTracker()
 run_metadata_manager = RunMetadataManager()
 tag_manager = TagManager()
 impact_analyzer = TestImpactAnalyzer()
+dependency_graph_builder = DependencyGraphBuilder()
 
 # ---------------- APP URL CONFIG ----------------
 APP_URLS = {
@@ -296,3 +298,14 @@ def pytest_collection_modifyitems(config, items):
 
     print("\n==== TEST IMPACT ANALYSIS ====")
     print(f"Impact report saved at: {impact_path}")
+
+
+def pytest_collection_finish(session):
+
+    dependency_graph_builder.build_graph()
+
+    # ----- DEPENDENCY GRAPH EXPORT -----
+    graph_path = dependency_graph_builder.export_graph()
+
+    print("\n==== DEPENDENCY GRAPH ====")
+    print(f"Dependency graph saved at: {graph_path}")
