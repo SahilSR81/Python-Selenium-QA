@@ -19,6 +19,7 @@ from utils.run_metadata_manager import RunMetadataManager
 from utils.tag_manager import TagManager
 from utils.test_impact_analyzer import TestImpactAnalyzer
 from utils.dependency_graph_builder import DependencyGraphBuilder
+from utils.failure_root_analyzer import FailureRootAnalyzer
 
 # ---------------- GLOBAL METRICS OBJECT ----------------
 metrics = ExecutionMetrics()
@@ -27,6 +28,7 @@ run_metadata_manager = RunMetadataManager()
 tag_manager = TagManager()
 impact_analyzer = TestImpactAnalyzer()
 dependency_graph_builder = DependencyGraphBuilder()
+failure_root_analyzer = FailureRootAnalyzer()
 
 # ---------------- APP URL CONFIG ----------------
 APP_URLS = {
@@ -119,6 +121,7 @@ def pytest_runtest_makereport(item, call):
 def pytest_runtest_logreport(report):
     if report.when == "call" and report.failed:
         flaky_tracker.record_retry(report.nodeid)
+        failure_root_analyzer.record_failure(report.nodeid, str(report.longrepr))
 
 
 # ---------------- SCREENSHOT ON FAILURE ----------------
@@ -309,3 +312,10 @@ def pytest_collection_finish(session):
 
     print("\n==== DEPENDENCY GRAPH ====")
     print(f"Dependency graph saved at: {graph_path}")
+
+    # ----- FAILURE ROOT CAUSE REPORT -----
+
+    failure_report_path = failure_root_analyzer.export_report()
+
+    print("\n==== FAILURE ROOT ANALYSIS ====")
+    print(f"Failure analysis saved at: {failure_report_path}")
